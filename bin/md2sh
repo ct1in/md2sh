@@ -12,21 +12,11 @@ for foo
 do
 	[[ -s $foo ]] || continue
 
-	( awk '
-BEGIN {
-	prefix = ":"
-	in_block = 0
-}
+	code=$( awk '
 
 /^[ \t]*``` shell[ \t]*$/ {
-	# Calculate indentation length
-	indent = match($0, /[^ \t]/) - 1
-	indent_str = substr($0, 1, indent)
-
-	printf "%s <<- '\''%s``` shell'\''; sed '\''s/^%s//'\'' <<- '\''%s```'\''",
-	prefix, indent_str, indent_str, indent_str
-
-	prefix = ";"
+	match($0,/^[ \t]*/)
+	indent = RLENGTH
 	in_block = 1
 	next
 }
@@ -36,12 +26,13 @@ BEGIN {
 	next
 }
 
-END {
-	print "; <<- EOF"
+in_block {
+	print substr($0, indent + 1)
 }
-' "$foo"
-	cat "$foo"
-	) | sh
+' "$foo")
+
+eval "$code"
+
 done
 
 exit 0
