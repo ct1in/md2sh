@@ -1,0 +1,23 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Temporary / editor files
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Log or output files
+*.log
+*.out
+*.err
+
+# Shell script backup files
+*.sh~
+

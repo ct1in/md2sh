@@ -1,0 +1,65 @@
+#!/bin/bash
+# md2sh - Markdown shell code block to heredoc tool
+# Generate standardized heredoc commands with dynamic indentation handling
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 file.md"
+    exit 1
+fi
+
+file="$1"
+
+awk '
+BEGIN {
+    block_count = 0
+    command_line = ""
+    in_block = 0
+}
+
+/^[ \t]*``` shell[ \t]*$/ {
+    # Calculate indentation length
+    indent = match($0, /[^ \t]/) - 1
+    indent_str = substr($0, 1, indent)
+    block_count++
+
+    # Generate heredoc commands - use colon for the first one, semicolon for the rest
+    if (block_count == 1) {
+        prefix = ":"
+        tee_option = "tee output.sh"
+    } else {
+        prefix = ""
+        tee_option = "tee -a output.sh"
+    }
+
+    printf "\n===== Start heredoc for shell code block %d =====\n", block_count
+    #printf "\n===== Start heredoc for shell code block %d =====\n", block_count > "/dev/stderr"
+
+    printf "%s <<- '\''%s``` shell'\''; sed '\''s/^%s//'\'' <<- '\''%s```'\'' | %s;\n",
+           prefix, indent_str, indent_str, indent_str, tee_option
+
+    command_line = command_line sprintf("%s <<- '\''%s``` shell'\''; sed '\''s/^%s//'\'' <<- '\''%s```'\'' | %s;",
+                                        prefix, indent_str, indent_str, indent_str, tee_option)
+
+    printf "%s``` shell\n", indent_str
+    in_block = 1
+    next
+}
+
+/^[ \t]*```[ \t]*$/ && in_block {
+    printf "%s```\n", indent_str
+    in_block = 0
+    next
+}
+
+in_block {
+    print $0
+}
+
+END {
+    if (command_line != "") {
+        print ""
+        print "===== Complete heredoc command: ====="
+        print command_line " <<- EOF"
+    }
+}
+' "$file"
